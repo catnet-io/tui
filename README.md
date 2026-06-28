@@ -1,4 +1,4 @@
-﻿# catnet-tui
+# catnet-tui
 
 catnet-tui is the terminal user interface for the CatNet ecosystem.
 
@@ -21,3 +21,13 @@ It focuses on keyboard-first workflows, live execution visibility, result naviga
 
 ## Status
 Bootstrap phase. UX flows and component boundaries are under active design.
+
+
+## Part of the CatNet ecosystem
+
+| | Repository | Role |
+|---|---|---|
+| ⚙️ | [catnet-io/engine](https://github.com/catnet-io/engine) | Shared Go scanning engine |
+| 💻 | [catnet-io/catnet](https://github.com/catnet-io/catnet) | CLI |
+| 🖥️ | [catnet-io/app](https://github.com/catnet-io/app) | Desktop app |
+| 📟 | [catnet-io/tui](https://github.com/catnet-io/tui) | Terminal UI |
