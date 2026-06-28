@@ -2,25 +2,46 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
-  test:
+  build:
+    name: Build · test · vet
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    strategy:
+      matrix:
+        go-version: ["1.26.x"]
 
-      - name: Setup Go
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go ${{ matrix.go-version }}
         uses: actions/setup-go@v5
         with:
-          go-version: '1.26.x'
+          go-version: ${{ matrix.go-version }}
+          cache: true
 
-      - name: Verify modules
-        run: go mod tidy && git diff --exit-code
+      - name: Verify module integrity
+        run: go mod verify
+
+      - name: Check no local replace directives
+        run: |
+          if grep -P "^replace\s+\S+\s+=>\s+\.\." go.mod 2>/dev/null; then
+            echo "ERROR: Local replace directive found in go.mod"
+            exit 1
+          fi
+          echo "✓ No local replace directives"
 
       - name: Vet
         run: go vet ./...
 
-      - name: Test
-        run: go test ./...
+      - name: Build
+        run: go build ./...
+
+      - name: Test (race detector)
+        run: go test -race -coverprofile=coverage.out ./...
