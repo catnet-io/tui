@@ -1,14 +1,12 @@
 module github.com/catnet-io/tui
 
-go 1.26.3
-
-replace github.com/mendsec/catnet-core => ../catnet-core
+go 1.26.4
 
 require (
+	github.com/catnet-io/engine v0.5.1
 	github.com/charmbracelet/bubbles v1.0.0
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
-	github.com/mendsec/catnet-core v0.0.0-00010101000000-000000000000
 )
 
 require (
@@ -35,3 +33,5 @@ require (
 	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/text v0.3.8 // indirect
 )
+
+replace github.com/catnet-io/engine => ../engine
