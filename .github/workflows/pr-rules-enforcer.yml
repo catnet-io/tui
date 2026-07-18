@@ -1,0 +1,68 @@
+name: PR Rules Enforcer
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  enforce-rules:
+    name: Enforce Main Branch Rules
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate PR Source and Author
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_USER: ${{ github.event.pull_request.user.login }}
+        run: |
+          echo "PR HEAD ref: $HEAD_REF"
+          echo "PR creator: $PR_USER"
+          
+          if [ "$HEAD_REF" != "develop" ]; then
+            echo "::error::PRs to main must only come from the 'develop' branch. Found: '$HEAD_REF'."
+            exit 1
+          fi
+          
+          if [ "$PR_USER" != "github-actions[bot]" ] && [ "$PR_USER" != "app/github-actions" ]; then
+            echo "::error::PRs from 'develop' to 'main' must be created by 'github-actions[bot]'. Manual PRs are not allowed. Found: '$PR_USER'."
+            exit 1
+          fi
+          
+          echo "✓ PR source branch and creator are valid."
+
+      - name: Validate Commit Signatures
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          # Fetch main branch to check commits differences
+          git fetch origin main
+          
+          # Check signatures of all commits in the PR branch
+          echo "Checking commits signature up to: $HEAD_SHA"
+          
+          # git log lists all commits in the PR branch that are not in main
+          # %G? prints the signature verification status (N for no signature)
+          HAS_UNSIGNED=0
+          while read -r sha sig; do
+            if [ -z "$sha" ]; then
+              continue
+            fi
+            if [ "$sig" = "N" ]; then
+              echo "::error::Commit $sha is NOT signed. All commits in a PR to main must be signed (GPG or SSH)."
+              HAS_UNSIGNED=1
+            else
+              echo "✓ Commit $sha has a signature (status: $sig)"
+            fi
+          done < <(git log origin/main..$HEAD_SHA --pretty=format:"%H %G?")
+          
+          if [ "$HAS_UNSIGNED" -eq 1 ]; then
+            exit 1
+          fi
+          echo "✓ All commits are properly signed."

@@ -1,0 +1,48 @@
+name: Auto Merge PR (develop → main)
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  open-pr:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Create Pull Request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --base main \
+            --head develop \
+            --title "chore: merge develop → main" \
+            --body "Automated PR by github-actions[bot]." || \
+            echo "PR already exists, skipping."
+
+      - name: Request review and enable auto-merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=$(gh pr list --head develop --base main --json number -q '.[0].number' 2>/dev/null || echo "")
+          if [ -n "$PR_NUMBER" ]; then
+            gh pr edit "$PR_NUMBER" --add-reviewer mendsec 2>/dev/null || \
+            echo "Could not request review."
+            
+            # Enforce merge strategy to prevent squash, which causes develop to diverge
+            gh pr merge "$PR_NUMBER" --merge --auto 2>/dev/null || \
+            echo "Could not enable auto-merge. Ensure 'Allow merge commits' is enabled in repo settings."
+            
+            echo "PR #$PR_NUMBER updated. Waiting for review from mendsec."
+          fi
