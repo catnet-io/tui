@@ -73,7 +73,7 @@ func (m Model) exportResults() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile("catnet_export.json", data, 0644)
+	return os.WriteFile("catnet_export.json", data, 0600)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
