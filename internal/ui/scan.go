@@ -37,6 +37,7 @@ func listenForEvents(ch <-chan events.Event) tea.Cmd {
 
 func (m *Model) startScan() tea.Cmd {
 	m.eventChan = make(chan events.Event)
+	eventChan := m.eventChan
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancelFn = cancel
 
@@ -45,11 +46,11 @@ func (m *Model) startScan() tea.Cmd {
 		cfg := profile.DefaultProfile()
 		cfg.Concurrency = 32
 		cfg.TimeoutMs = 1000
-		if err := m.engine.ScanStream(ctx, []string{m.targetRange}, cfg, m.eventChan); err != nil && ctx.Err() == nil {
+		if err := m.engine.ScanStream(ctx, []string{m.targetRange}, cfg, eventChan); err != nil && ctx.Err() == nil {
 			_ = err
 		}
-		close(m.eventChan)
+		close(eventChan)
 	}()
 
-	return listenForEvents(m.eventChan)
+	return listenForEvents(eventChan)
 }

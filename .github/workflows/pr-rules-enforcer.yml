@@ -45,11 +45,7 @@ jobs:
         env:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          git fetch origin main || true
-          BASE_REF="origin/main"
-          if ! git rev-parse --verify $BASE_REF >/dev/null 2>&1; then
-            BASE_REF="HEAD~1"
-          fi
+          git fetch origin main
           
           HAS_UNSIGNED=0
           while read -r sha || [ -n "$sha" ]; do
@@ -62,7 +58,7 @@ jobs:
             else
               echo "✓ Commit $sha has a signature."
             fi
-          done < <(git log $BASE_REF..${HEAD_SHA:-HEAD} --pretty=format:"%H")
+          done < <(git log origin/main..${HEAD_SHA:-HEAD} --pretty=format:"%H")
           
           if [ "$HAS_UNSIGNED" -eq 1 ]; then
             echo "::error::Signature validation failed. Bypassing requirements or merging without satisfying status checks is strictly prohibited."
