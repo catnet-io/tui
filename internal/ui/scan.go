@@ -45,9 +45,8 @@ func (m *Model) startScan() tea.Cmd {
 		cfg := profile.DefaultProfile()
 		cfg.Concurrency = 32
 		cfg.TimeoutMs = 1000
-		err := m.engine.ScanStream(ctx, []string{m.targetRange}, cfg, m.eventChan)
-		if err != nil && ctx.Err() == nil {
-			// Ignore or log error if context wasn't explicitly canceled
+		if err := m.engine.ScanStream(ctx, []string{m.targetRange}, cfg, m.eventChan); err != nil && ctx.Err() == nil {
+			_ = err
 		}
 		close(m.eventChan)
 	}()

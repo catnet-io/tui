@@ -1,8 +1,11 @@
 name: PR Rules Enforcer
 
 on:
+  push:
+    branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -22,43 +25,47 @@ jobs:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
           PR_USER: ${{ github.event.pull_request.user.login }}
         run: |
-          echo "PR HEAD ref: $HEAD_REF"
-          echo "PR creator: $PR_USER"
-          
-          if [ "$HEAD_REF" != "develop" ]; then
-            echo "::error::PRs to main must only come from the 'develop' branch. Found: '$HEAD_REF'."
-            exit 1
+          if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.event.pull_request.base.ref }}" = "main" ]; then
+            echo "PR HEAD ref: $HEAD_REF"
+            echo "PR creator: $PR_USER"
+            
+            if [ "$HEAD_REF" != "develop" ]; then
+              echo "::error::PRs to main must only come from the 'develop' branch. Found: '$HEAD_REF'."
+              exit 1
+            fi
+            
+            if [ "$PR_USER" != "github-actions[bot]" ] && [ "$PR_USER" != "app/github-actions" ] && [ "$PR_USER" != "mendsec" ]; then
+              echo "::error::PRs from 'develop' to 'main' must be created by 'github-actions[bot]' or maintainer. Manual PRs from unauthorized users are not allowed. Found: '$PR_USER'."
+              exit 1
+            fi
           fi
-          
-          if [ "$PR_USER" != "github-actions[bot]" ] && [ "$PR_USER" != "app/github-actions" ] && [ "$PR_USER" != "mendsec" ]; then
-            echo "::error::PRs from 'develop' to 'main' must be created by 'github-actions[bot]' or maintainer. Manual PRs from unauthorized users are not allowed. Found: '$PR_USER'."
-            exit 1
-          fi
-          
-          echo "✓ PR source branch and creator are valid."
+          echo "✓ Source branch and author validation passed."
 
       - name: Validate Commit Signatures
         env:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          # Fetch main branch to check commits differences
-          git fetch origin main
+          git fetch origin main || true
+          BASE_REF="origin/main"
+          if ! git rev-parse --verify $BASE_REF >/dev/null 2>&1; then
+            BASE_REF="HEAD~1"
+          fi
           
-          # Check signatures of all commits in the PR branch
           HAS_UNSIGNED=0
           while read -r sha || [ -n "$sha" ]; do
             if [ -z "$sha" ]; then
               continue
             fi
-            if ! git cat-file -p "$sha" | grep -q "^gpgsig "; then
-              echo "::error::Commit $sha is NOT signed. All commits in a PR to main must be signed (GPG or SSH)."
+            if ! git cat-file -p "$sha" | grep -qE "^(gpgsig|gpgsig-sha256)"; then
+              echo "::error::Commit $sha is NOT signed. All commits must be signed (SSH or GPG). Rule bypass is strictly forbidden."
               HAS_UNSIGNED=1
             else
               echo "✓ Commit $sha has a signature."
             fi
-          done < <(git log origin/main..$HEAD_SHA --pretty=format:"%H")
+          done < <(git log $BASE_REF..${HEAD_SHA:-HEAD} --pretty=format:"%H")
           
           if [ "$HAS_UNSIGNED" -eq 1 ]; then
+            echo "::error::Signature validation failed. Bypassing requirements or merging without satisfying status checks is strictly prohibited."
             exit 1
           fi
           echo "✓ All commits are properly signed."
