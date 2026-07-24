@@ -30,8 +30,8 @@ jobs:
             exit 1
           fi
           
-          if [ "$PR_USER" != "github-actions[bot]" ] && [ "$PR_USER" != "app/github-actions" ]; then
-            echo "::error::PRs from 'develop' to 'main' must be created by 'github-actions[bot]'. Manual PRs are not allowed. Found: '$PR_USER'."
+          if [ "$PR_USER" != "github-actions[bot]" ] && [ "$PR_USER" != "app/github-actions" ] && [ "$PR_USER" != "mendsec" ]; then
+            echo "::error::PRs from 'develop' to 'main' must be created by 'github-actions[bot]' or maintainer. Manual PRs from unauthorized users are not allowed. Found: '$PR_USER'."
             exit 1
           fi
           
