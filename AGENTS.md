@@ -94,6 +94,8 @@ func listenForEvents(ch <-chan events.Event) tea.Cmd {
 6. **Do not go public before MVP checklist is complete.**
 7. **Immutable GitHub Action Pinning.** All GitHub Actions in workflow files must be pinned to full 40-character commit SHAs. Never use unpinned tags (e.g. `@v4`).
 8. **No `squash and merge`.** Never use squash merges (`gh pr merge --squash` or GitHub UI squash) for PRs in this repository. All PR merges must preserve atomic commit history via merge commits (`gh pr merge --merge`) or rebase merges (`gh pr merge --rebase`) to maintain DevSecOps traceability, commit provenance, and auditability.
+9. **Strict Branch Protection & Zero Rule Bypassing.** Merging into `main` without waiting for requirements to be met ("Merge without waiting for requirements to be met / bypass rules") is strictly prohibited across all repositories. All PRs targeting `main` must strictly satisfy all status checks, commit signature verifications (SSH or GPG `gpgsig`), and DevSecOps requirements before merging. Zero exceptions or rule bypasses are permitted.
+
 
 ---
 

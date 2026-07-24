@@ -91,8 +91,12 @@ func TestModelUpdateNavigationAndEvents(t *testing.T) {
 	updatedModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
 	m = updatedModel.(Model)
 	defer os.Remove("catnet_export.json")
-	if _, err := os.Stat("catnet_export.json"); os.IsNotExist(err) {
+	if info, err := os.Stat("catnet_export.json"); os.IsNotExist(err) {
 		t.Error("expected catnet_export.json file to be created")
+	} else if err == nil {
+		if perm := info.Mode().Perm(); perm != 0600 {
+			t.Errorf("expected 0600 file permissions for export file, got %o", perm)
+		}
 	}
 
 	// 7. Test Reset ('q') back to stateInput
@@ -199,5 +203,22 @@ func TestScanCancellationWithoutLeak(t *testing.T) {
 	msg := listenForEvents(m.eventChan)()
 	if _, ok := msg.(scanDoneMsg); !ok {
 		t.Errorf("expected scanDoneMsg upon scan cancellation, got %#v", msg)
+	}
+}
+
+func TestStartScanEventPropagation(t *testing.T) {
+	engine := scan.NewEngine()
+	m := NewModel(engine)
+	m.targetRange = "127.0.0.1"
+	m.state = stateScanning
+
+	cmd := m.startScan()
+	if cmd == nil {
+		t.Fatal("expected non-nil tea.Cmd from startScan")
+	}
+
+	msg := listenForEvents(m.eventChan)()
+	if msg == nil {
+		t.Error("expected non-nil message from scan event listener")
 	}
 }
