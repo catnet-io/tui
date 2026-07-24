@@ -1,4 +1,4 @@
-name: PR Rules Enforcer
+name: PR Rules Enforcer / Enforce Main Branch Rules
 
 on:
   push:
@@ -12,7 +12,6 @@ permissions:
 
 jobs:
   enforce-rules:
-    name: Enforce Main Branch Rules
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
