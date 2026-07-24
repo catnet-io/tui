@@ -1,4 +1,4 @@
-package main
+package ui
 
 import (
 	"context"
@@ -8,14 +8,12 @@ import (
 	"strings"
 
 	"github.com/catnet-io/engine/pkg/events"
-	"github.com/catnet-io/engine/pkg/profile"
 	"github.com/catnet-io/engine/pkg/results"
 	"github.com/catnet-io/engine/pkg/scan"
 
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 type sessionState int
@@ -26,13 +24,8 @@ const (
 	stateResults
 )
 
-// Msg types
-type readEventMsg struct {
-	event events.Event
-	ok    bool
-}
-
-type model struct {
+// Model represents the Bubble Tea model for the CatNet TUI.
+type Model struct {
 	state       sessionState
 	textInput   textinput.Model
 	progressBar progress.Model
@@ -48,7 +41,13 @@ type model struct {
 	eventChan chan events.Event
 }
 
-func initialModel() model {
+// InitialModel returns a new Model initialized for starting the TUI.
+func InitialModel() Model {
+	return NewModel(scan.NewEngine())
+}
+
+// NewModel creates a new Model with the provided scan Engine instance.
+func NewModel(engine *scan.Engine) Model {
 	ti := textinput.New()
 	ti.Placeholder = "192.168.1.1-254"
 	ti.Focus()
@@ -57,44 +56,19 @@ func initialModel() model {
 
 	pg := progress.New(progress.WithDefaultGradient())
 
-	return model{
+	return Model{
 		state:       stateInput,
 		textInput:   ti,
 		progressBar: pg,
-		engine:      scan.NewEngine(),
+		engine:      engine,
 	}
 }
 
-func (m model) Init() tea.Cmd {
+func (m Model) Init() tea.Cmd {
 	return textinput.Blink
 }
 
-func readEvent(ch chan events.Event) tea.Cmd {
-	return func() tea.Msg {
-		ev, ok := <-ch
-		return readEventMsg{event: ev, ok: ok}
-	}
-}
-
-func (m *model) startScan() tea.Cmd {
-	m.eventChan = make(chan events.Event)
-	ctx, cancel := context.WithCancel(context.Background())
-	m.cancelFn = cancel
-
-	// Start engine scan in background
-	go func() {
-		defer cancel()
-		cfg := profile.DefaultProfile()
-		cfg.Concurrency = 32
-		cfg.TimeoutMs = 1000
-		_ = m.engine.ScanStream(ctx, []string{m.targetRange}, cfg, m.eventChan)
-		close(m.eventChan)
-	}()
-
-	return readEvent(m.eventChan)
-}
-
-func (m model) exportResults() error {
+func (m Model) exportResults() error {
 	data, err := json.MarshalIndent(m.devices, "", "  ")
 	if err != nil {
 		return err
@@ -102,7 +76,7 @@ func (m model) exportResults() error {
 	return os.WriteFile("catnet_export.json", data, 0644)
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -111,10 +85,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "esc":
 			if m.state == stateScanning && m.cancelFn != nil {
 				m.cancelFn()
+				m.cancelFn = nil
 			}
 			return m, tea.Quit
 
 		case "q":
+			if m.state == stateScanning && m.cancelFn != nil {
+				m.cancelFn()
+				m.cancelFn = nil
+				return m, tea.Quit
+			}
 			if m.state == stateResults {
 				m.state = stateInput
 				m.devices = nil
@@ -165,29 +145,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
-	case readEventMsg:
-		if !msg.ok {
-			m.state = stateResults
-			return m, nil
-		}
+	case hostDiscoveredMsg:
+		m.devices = append(m.devices, results.HostResult(msg))
+		m.logMsgs = append(m.logMsgs, fmt.Sprintf("Host: %s (%s)", msg.IP, msg.Hostname))
+		return m, listenForEvents(m.eventChan)
 
-		// Process event
-		switch msg.event.Type {
-		case events.ScanProgress:
-			if data, ok := msg.event.Data.(events.ProgressData); ok {
-				m.progress = data.Ratio
-			}
-		case events.HostDiscovered:
-			if data, ok := msg.event.Data.(events.HostDiscoveredData); ok {
-				m.devices = append(m.devices, data.Host)
-				m.logMsgs = append(m.logMsgs, fmt.Sprintf("Host: %s (%s)", data.Host.IP, data.Host.Hostname))
-			}
-		case events.ScanCompleted:
-			m.state = stateResults
-		}
+	case scanProgressMsg:
+		m.progress = float64(msg)
+		return m, listenForEvents(m.eventChan)
 
-		// Read next event!
-		return m, readEvent(m.eventChan)
+	case scanDoneMsg:
+		m.state = stateResults
+		if msg.err != nil {
+			m.errorMsg = msg.err.Error()
+		}
+		return m, nil
 	}
 
 	if m.state == stateInput {
@@ -198,40 +170,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-var (
-	titleStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#66fcf1")).
-			Bold(true).
-			MarginBottom(1)
-
-	headerStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#45a29e")).
-			Bold(true).
-			Border(lipgloss.NormalBorder(), false, false, true, false).
-			BorderForeground(lipgloss.Color("#45a29e"))
-
-	selectedRowStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#0b0c10")).
-				Background(lipgloss.Color("#66fcf1")).
-				Bold(true)
-
-	normalRowStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#c5c6c7"))
-
-	cyanText  = lipgloss.NewStyle().Foreground(lipgloss.Color("#66fcf1"))
-	greyText  = lipgloss.NewStyle().Foreground(lipgloss.Color("#45a29e"))
-	redText   = lipgloss.NewStyle().Foreground(lipgloss.Color("#ff0055"))
-	greenText = lipgloss.NewStyle().Foreground(lipgloss.Color("#00ff88"))
-)
-
-func truncate(s string, l int) string {
-	if len(s) > l {
-		return s[:l-3] + "..."
-	}
-	return s
-}
-
-func (m model) View() string {
+func (m Model) View() string {
 	var s strings.Builder
 
 	// Title Banner
@@ -266,7 +205,7 @@ func (m model) View() string {
 			s.WriteString(fmt.Sprintf("  %s\n", m.logMsgs[i]))
 		}
 		s.WriteString("\n")
-		s.WriteString(redText.Render("Press [ESC] to abort scan"))
+		s.WriteString(redText.Render("Press [ESC] or [q] to abort scan"))
 
 	case stateResults:
 		s.WriteString(greenText.Render(fmt.Sprintf("Scan completed for: %s", m.targetRange)))
@@ -314,12 +253,4 @@ func (m model) View() string {
 	}
 
 	return s.String()
-}
-
-func main() {
-	p := tea.NewProgram(initialModel())
-	if _, err := p.Run(); err != nil {
-		fmt.Printf("Alas, there's been an error: %v", err)
-		os.Exit(1)
-	}
 }

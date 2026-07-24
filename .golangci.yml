@@ -1,0 +1,22 @@
+run:
+  timeout: 5m
+  tests: true
+
+linters-settings:
+  gosec:
+    severity: medium
+    confidence: medium
+
+linters:
+  disable-all: false
+  enable:
+    - gosec       # Analisador de vulnerabilidades e segurança
+    - errcheck    # Verifica erros não tratados
+    - gosimple    # Simplificação de código
+    - govet       # Linter oficial do Go
+    - ineffassign # Detecta atribuições inúteis
+    - staticcheck # Análise estática avançada
+    - unused      # Detecta variáveis não usadas
+
+issues:
+  exclude-use-default: true

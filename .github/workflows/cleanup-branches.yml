@@ -1,0 +1,39 @@
+name: Cleanup Non-DevSecOps Branches
+
+on:
+  schedule:
+    - cron: '0 0 * * 0' # Run weekly on Sunday at 00:00
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Cleanup invalid branches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Allowed DevSecOps branch patterns
+          PATTERN="^(main|develop|develop-signed|feature/.*|bugfix/.*|hotfix/.*|release/.*|security/.*|dependabot/.*)$"
+          
+          # Fetch all remote branches (excluding HEAD pointer)
+          BRANCHES=$(git branch -r | grep -v '\->' | sed 's/origin\///')
+          
+          for BRANCH in $BRANCHES; do
+            # Trim whitespace
+            BRANCH=$(echo "$BRANCH" | xargs)
+            if [[ ! "$BRANCH" =~ $PATTERN ]]; then
+              echo "Branch '$BRANCH' does not match DevSecOps culture. Deleting..."
+              git push origin --delete "$BRANCH" || echo "Failed to delete $BRANCH (it may be protected)"
+            else
+              echo "Branch '$BRANCH' is valid."
+            fi
+          done
