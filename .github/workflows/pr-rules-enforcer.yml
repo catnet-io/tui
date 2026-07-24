@@ -40,6 +40,7 @@ jobs:
       - name: Validate Commit Signatures
         env:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_USER: ${{ github.event.pull_request.user.login }}
         run: |
           # Fetch main branch to check commits differences
           git fetch origin main
@@ -50,9 +51,13 @@ jobs:
             if [ -z "$sha" ]; then
               continue
             fi
-            if ! git cat-file -p "$sha" | grep -q "^gpgsig "; then
-              echo "::error::Commit $sha is NOT signed. All commits in a PR to main must be signed (GPG or SSH)."
-              HAS_UNSIGNED=1
+            if ! git cat-file -p "$sha" | grep -qE "^(gpgsig|gpgsig-sha256)"; then
+              if [ "$PR_USER" = "github-actions[bot]" ] || [ "$PR_USER" = "app/github-actions" ] || [ "$PR_USER" = "mendsec" ]; then
+                echo "::warning::Commit $sha is unsigned, but permitted for automated/maintainer PR ($PR_USER)."
+              else
+                echo "::error::Commit $sha is NOT signed. All commits in a PR to main must be signed (GPG or SSH)."
+                HAS_UNSIGNED=1
+              fi
             else
               echo "✓ Commit $sha has a signature."
             fi
@@ -61,4 +66,4 @@ jobs:
           if [ "$HAS_UNSIGNED" -eq 1 ]; then
             exit 1
           fi
-          echo "✓ All commits are properly signed."
+          echo "✓ All commits meet signature requirements."

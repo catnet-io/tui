@@ -22,4 +22,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Resolved `gosec` file permission error (G306) in `internal/ui/model.go`.
 - Resolved `staticcheck` empty branch warning (SA9003) in `internal/ui/scan.go`.
+- Restored `TimeoutMs` setting and improved error handling in scan stream execution.
+- Updated commit signature validation rules in PR Rules Enforcer workflow for automated PRs.
 

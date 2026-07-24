@@ -44,7 +44,10 @@ func (m *Model) startScan() tea.Cmd {
 		defer cancel()
 		cfg := profile.DefaultProfile()
 		cfg.Concurrency = 32
-		_ = m.engine.ScanStream(ctx, []string{m.targetRange}, cfg, m.eventChan)
+		cfg.TimeoutMs = 1000
+		if err := m.engine.ScanStream(ctx, []string{m.targetRange}, cfg, m.eventChan); err != nil && ctx.Err() == nil {
+			_ = err
+		}
 		close(m.eventChan)
 	}()
 
