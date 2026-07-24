@@ -35,3 +35,7 @@ Bootstrap phase. UX flows and component boundaries are under active design.
 | 💻 | [catnet-io/catnet](https://github.com/catnet-io/catnet) | CLI |
 | 🖥️ | [catnet-io/app](https://github.com/catnet-io/app) | Desktop app |
 | 📟 | [catnet-io/tui](https://github.com/catnet-io/tui) | Terminal UI |
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
