@@ -22,7 +22,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Allowed DevSecOps branch patterns
-          PATTERN="^(main|develop|develop-signed|feature/.*|bugfix/.*|hotfix/.*|release/.*|security/.*|dependabot/.*)$"
+          PATTERN="^(main|develop|feature/.*|bugfix/.*|hotfix/.*|release/.*|security/.*|dependabot/.*)$"
           
           # Fetch all remote branches (excluding HEAD pointer)
           BRANCHES=$(git branch -r | grep -v '\->' | sed 's/origin\///')
