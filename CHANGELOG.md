@@ -17,3 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Refactored single-file root `main.go` into standard `cmd/catnet-tui` and `internal/ui` package structure.
+
+### Fixed
+
+- Resolved `gosec` file permission error (G306) in `internal/ui/model.go`.
+- Resolved `staticcheck` empty branch warning (SA9003) in `internal/ui/scan.go`.
+
