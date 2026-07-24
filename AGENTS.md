@@ -1,6 +1,6 @@
 # AGENTS.md — catnet-io/tui
 
-This file provides persistent context for AI coding agents working in `catnet-io/tui`.
+This file provides persistent context for AI coding agents (Antigravity, Jules, OpenHands, Claude Code) working in the `catnet-io/tui` repository.
 
 ---
 
@@ -23,7 +23,7 @@ This repository is in **bootstrap phase** — the MVP has not been delivered yet
 1. Single TUI screen: target input → scan → live host list
 2. Progress bar updating in real time from `pkg/scan.Engine.ScanStream`
 3. `q` or `Ctrl+C` cancels scan without goroutine leak
-4. CI passing (`go build`, `go test -race`, `go vet`)
+4. CI passing (`go build`, `go test -race`, `go vet`, `golangci-lint`, `govulncheck`)
 
 Do not add features beyond this list until the MVP checklist is complete.
 
@@ -89,9 +89,11 @@ func listenForEvents(ch <-chan events.Event) tea.Cmd {
 1. **No scanning logic in this repository.** All scanning happens in `catnet-io/engine`.
 2. **Use `pkg/scan.Engine.ScanStream` only.** Never `pkg/engine.StartScan`.
 3. **No CGO.**
-4. **English only** in all Go source files.
-5. **No local `replace` directives in `main` branch.**
+4. **English only everywhere.** All code, comments, godoc, log messages, error strings, PR descriptions, PR review comments, commit messages, and documentation across the entire repository must be in English. Portuguese and non-English text are strictly forbidden.
+5. **No local `replace` directives committed to `main`.** Use `scripts/dev-replace.sh on/off` to toggle during local development.
 6. **Do not go public before MVP checklist is complete.**
+7. **Immutable GitHub Action Pinning.** All GitHub Actions in workflow files must be pinned to full 40-character commit SHAs. Never use unpinned tags (e.g. `@v4`).
+8. **No `squash and merge`.** Never use squash merges (`gh pr merge --squash` or GitHub UI squash) for PRs in this repository. All PR merges must preserve atomic commit history via merge commits (`gh pr merge --merge`) or rebase merges (`gh pr merge --rebase`) to maintain DevSecOps traceability, commit provenance, and auditability.
 
 ---
 
@@ -106,16 +108,29 @@ chore(deps): add charmbracelet/bubbletea v1.x
 test(ui): add test for scan cancellation without leak
 ```
 
-Scopes: `ui`, `scan`, `styles`, `deps`, `ci`.
+Scopes: `ui`, `scan`, `styles`, `deps`, `ci`, `docs`.
 
 ### Changelog — Keep a Changelog
 
-Start `CHANGELOG.md` from the first commit. Include `[Unreleased]` section.
+Every PR that changes behavior must update `CHANGELOG.md` under `[Unreleased]`.
+Sections: `Added`, `Changed`, `Fixed`, `Security`, `Deprecated`, `Removed`.
+Breaking changes must start with `**BREAKING CHANGE**:`.
+
+### Go style & Testing
+
+- `gofmt` and `goimports` on all files.
+- `golangci-lint` must pass (see `.golangci.yml` for enabled linters).
+- All new public functions must have unit tests.
+- Concurrency-sensitive code must be tested with `-race`.
+- Prefer `context.Context` as first parameter in all public functions that do I/O or async tasks.
 
 ---
 
-## CI requirements — all must pass before going public
+## CI requirements — all must pass before merge / going public
 
 - `go build ./...`
 - `go test -race ./...`
 - `go vet ./...`
+- `golangci-lint run` (via `golangci-lint.yml` workflow)
+- `govulncheck ./...`
+
