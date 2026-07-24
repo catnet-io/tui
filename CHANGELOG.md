@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Main binary entrypoint at `cmd/catnet-tui/main.go`.
 - Real-time engine event consumption via `ScanStream` channel (`listenForEvents`).
 - Race-detector unit tests for UI model state transitions, event stream processing, and goroutine scan cancellation in `internal/ui/model_test.go`.
+- MIT License file (`LICENSE`).
 
 ### Changed
 
