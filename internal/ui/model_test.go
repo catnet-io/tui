@@ -217,8 +217,6 @@ func TestStartScanEventPropagation(t *testing.T) {
 		t.Fatal("expected non-nil tea.Cmd from startScan")
 	}
 
-	time.Sleep(200 * time.Millisecond)
-
 	msg := listenForEvents(m.eventChan)()
 	if msg == nil {
 		t.Error("expected non-nil message from scan event listener")
