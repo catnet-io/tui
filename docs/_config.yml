@@ -1,0 +1,19 @@
+title: catnet-tui — Interactive Terminal UI Scanner
+description: >-
+  Interactive Terminal UI frontend for CatNet network scanner.
+  Powered by catnet-io/engine — keyboard-centric TUI built with Bubble Tea.
+baseurl: "/tui"
+url: "https://catnet-io.github.io"
+theme: jekyll-theme-cayman
+show_downloads: false
+github:
+  repository_url: https://github.com/catnet-io/tui
+navigation:
+  - title: Home
+    url: /tui/
+  - title: GitHub Repository
+    url: https://github.com/catnet-io/tui
+  - title: Wiki
+    url: https://github.com/catnet-io/tui/wiki
+  - title: catnet-io/engine
+    url: https://github.com/catnet-io/engine

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added GitHub Pages documentation site under `docs/` matching catnet documentation layout.
+
 ### Changed
 
 - Refactored TUI key navigation so `q` and `esc` abort active scans back to target input instead of exiting the application.
