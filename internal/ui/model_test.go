@@ -251,6 +251,22 @@ func TestDefaultAutoTarget(t *testing.T) {
 	if m.targetRange != "auto" {
 		t.Errorf("expected targetRange to default to 'auto', got %q", m.targetRange)
 	}
+
+	m2 := InitialModel()
+	m2.textInput.SetValue("   ")
+	updatedModel2, _ := m2.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m2 = updatedModel2.(Model)
+	if m2.targetRange != "auto" {
+		t.Errorf("expected whitespace-only input to default to 'auto', got %q", m2.targetRange)
+	}
+
+	m3 := InitialModel()
+	m3.textInput.SetValue("  192.168.1.0/24  ")
+	updatedModel3, _ := m3.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m3 = updatedModel3.(Model)
+	if m3.targetRange != "192.168.1.0/24" {
+		t.Errorf("expected trimmed targetRange '192.168.1.0/24', got %q", m3.targetRange)
+	}
 }
 
 func TestInputQHandling(t *testing.T) {

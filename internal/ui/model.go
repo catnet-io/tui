@@ -122,7 +122,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "enter":
 			if m.state == stateInput {
-				m.targetRange = m.textInput.Value()
+				m.targetRange = strings.ToLower(strings.TrimSpace(m.textInput.Value()))
 				if m.targetRange == "" {
 					m.targetRange = "auto"
 				}
