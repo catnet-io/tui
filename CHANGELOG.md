@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Refactored TUI key navigation so `q` and `esc` abort active scans back to target input instead of exiting the application.
+
+### Fixed
+
+- Resolved data race in scan initialization goroutine (`startScan`) when accessing engine and target parameters.
+
 ## [0.1.0] - 2026-07-25
 
 ### Added

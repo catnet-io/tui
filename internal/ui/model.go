@@ -82,18 +82,34 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "esc":
+		case "ctrl+c":
 			if m.state == stateScanning && m.cancelFn != nil {
 				m.cancelFn()
 				m.cancelFn = nil
 			}
 			return m, tea.Quit
 
+		case "esc":
+			if m.state == stateScanning {
+				if m.cancelFn != nil {
+					m.cancelFn()
+					m.cancelFn = nil
+				}
+				m.state = stateInput
+				m.textInput.Focus()
+				return m, nil
+			}
+			return m, tea.Quit
+
 		case "q":
-			if m.state == stateScanning && m.cancelFn != nil {
-				m.cancelFn()
-				m.cancelFn = nil
-				return m, tea.Quit
+			if m.state == stateScanning {
+				if m.cancelFn != nil {
+					m.cancelFn()
+					m.cancelFn = nil
+				}
+				m.state = stateInput
+				m.textInput.Focus()
+				return m, nil
 			}
 			if m.state == stateResults {
 				m.state = stateInput
@@ -152,9 +168,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, listenForEvents(m.eventChan)
 
 	case scanDoneMsg:
-		m.state = stateResults
-		if msg.err != nil {
-			m.errorMsg = msg.err.Error()
+		if m.state == stateScanning {
+			m.state = stateResults
+			if msg.err != nil {
+				m.errorMsg = msg.err.Error()
+			}
 		}
 		return m, nil
 	}
