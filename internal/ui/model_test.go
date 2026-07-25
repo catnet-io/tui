@@ -222,3 +222,15 @@ func TestStartScanEventPropagation(t *testing.T) {
 		t.Error("expected non-nil message from scan event listener")
 	}
 }
+
+func TestDefaultAutoTarget(t *testing.T) {
+	m := InitialModel()
+	if m.textInput.Value() != "" {
+		t.Errorf("expected empty initial input value, got %q", m.textInput.Value())
+	}
+	updatedModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updatedModel.(Model)
+	if m.targetRange != "auto" {
+		t.Errorf("expected targetRange to default to 'auto', got %q", m.targetRange)
+	}
+}

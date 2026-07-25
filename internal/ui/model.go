@@ -49,7 +49,7 @@ func InitialModel() Model {
 // NewModel creates a new Model with the provided scan Engine instance.
 func NewModel(engine *scan.Engine) Model {
 	ti := textinput.New()
-	ti.Placeholder = "192.168.1.1-254"
+	ti.Placeholder = "auto (or e.g. 192.168.1.1-254)"
 	ti.Focus()
 	ti.CharLimit = 156
 	ti.Width = 30
@@ -111,7 +111,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.state == stateInput {
 				m.targetRange = m.textInput.Value()
 				if m.targetRange == "" {
-					m.targetRange = "192.168.1.1-254"
+					m.targetRange = "auto"
 				}
 				m.state = stateScanning
 				m.progress = 0
@@ -179,7 +179,7 @@ func (m Model) View() string {
 
 	switch m.state {
 	case stateInput:
-		s.WriteString(greyText.Render("Enter IP range or CIDR to scan (default: 192.168.1.1-254):"))
+		s.WriteString(greyText.Render("Enter IP range, CIDR, or 'auto' to scan (default: auto):"))
 		s.WriteString("\n\n")
 		s.WriteString(m.textInput.View())
 		s.WriteString("\n\n")

@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-07-25
+
 ### Added
 
+- Target auto-detection (`'auto'`) support in interactive TUI scanner model input.
 - Modular UI architecture in `internal/ui` (`model.go`, `scan.go`, `styles.go`).
 - Main binary entrypoint at `cmd/catnet-tui/main.go`.
 - Real-time engine event consumption via `ScanStream` channel (`listenForEvents`).
@@ -17,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Upgraded `github.com/catnet-io/engine` dependency to `v0.6.0`.
 - Refactored single-file root `main.go` into standard `cmd/catnet-tui` and `internal/ui` package structure.
 
 ### Fixed
@@ -25,4 +29,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Resolved `staticcheck` empty branch warning (SA9003) in `internal/ui/scan.go`.
 - Restored `TimeoutMs` setting and improved error handling in scan stream execution.
 - Updated commit signature validation rules in PR Rules Enforcer workflow for automated PRs.
+
 
