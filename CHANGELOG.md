@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Refactored TUI key navigation so `q` and `esc` abort active scans back to target input instead of exiting the application.
 
+### Removed
+
+- Removed redundant static `docs/index.html` in favor of Jekyll-rendered `docs/index.md`.
+
 ### Fixed
 
 - Resolved data race in scan initialization goroutine (`startScan`) when accessing engine and target parameters.
