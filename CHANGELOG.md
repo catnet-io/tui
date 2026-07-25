@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added GitHub Pages documentation site under `docs/` matching catnet documentation layout.
+- Added support for `TAP_GITHUB_TOKEN` secret in release workflow for Homebrew and Scoop publishing.
 
 ### Changed
 
