@@ -103,9 +103,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.textInput.Focus()
 				return m, nil
 			}
-			if m.state == stateInput {
-				return m, tea.Quit
-			}
 
 		case "enter":
 			if m.state == stateInput {
@@ -243,9 +240,15 @@ func (m Model) View() string {
 			s.WriteString("\n")
 		}
 
-		if len(m.logMsgs) > 0 && m.logMsgs[len(m.logMsgs)-1] == "Exported to catnet_export.json" {
-			s.WriteString(greenText.Render("✓ Results successfully exported to catnet_export.json"))
-			s.WriteString("\n\n")
+		if len(m.logMsgs) > 0 {
+			lastLog := m.logMsgs[len(m.logMsgs)-1]
+			if strings.HasPrefix(lastLog, "Exported to") {
+				s.WriteString(greenText.Render(fmt.Sprintf("✓ %s", lastLog)))
+				s.WriteString("\n\n")
+			} else if strings.HasPrefix(lastLog, "Export error:") {
+				s.WriteString(redText.Render(fmt.Sprintf("✗ %s", lastLog)))
+				s.WriteString("\n\n")
+			}
 		}
 
 		// Footer navigation

@@ -234,3 +234,35 @@ func TestDefaultAutoTarget(t *testing.T) {
 		t.Errorf("expected targetRange to default to 'auto', got %q", m.targetRange)
 	}
 }
+
+func TestInputQHandling(t *testing.T) {
+	m := InitialModel()
+	updatedModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	m = updatedModel.(Model)
+	if m.state != stateInput {
+		t.Errorf("expected to stay in stateInput when typing 'q', got %v", m.state)
+	}
+	if cmd != nil && cmd() == tea.Quit() {
+		t.Error("typing 'q' in stateInput should not quit application")
+	}
+}
+
+func TestExportFeedbackRendering(t *testing.T) {
+	m := InitialModel()
+	m.state = stateResults
+	m.devices = []results.HostResult{{IP: "192.168.1.1"}}
+
+	// Success export log
+	m.logMsgs = []string{"Exported to catnet_export.json"}
+	viewStr := m.View()
+	if !strings.Contains(viewStr, "Exported to catnet_export.json") {
+		t.Errorf("expected View to render export success log, got %q", viewStr)
+	}
+
+	// Error export log
+	m.logMsgs = []string{"Export error: permission denied"}
+	viewStr = m.View()
+	if !strings.Contains(viewStr, "Export error: permission denied") {
+		t.Errorf("expected View to render export error log, got %q", viewStr)
+	}
+}
