@@ -7,9 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added GitHub Pages documentation site under `docs/` matching catnet documentation layout.
+- Added support for `TAP_GITHUB_TOKEN` secret in release workflow for Homebrew and Scoop publishing.
+
 ### Changed
 
 - Refactored TUI key navigation so `q` and `esc` abort active scans back to target input instead of exiting the application.
+
+### Removed
+
+- Removed redundant static `docs/index.html` in favor of Jekyll-rendered `docs/index.md`.
 
 ### Fixed
 
