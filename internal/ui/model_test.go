@@ -117,13 +117,31 @@ func TestScanCancellation(t *testing.T) {
 		canceled = true
 	}
 
-	// Press Esc while scanning
-	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	// Press Esc while scanning aborts scan to stateInput
+	updatedModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
 	if !canceled {
 		t.Error("expected cancelFn to be invoked when Esc is pressed in scanning state")
 	}
-	if cmd() != tea.Quit() {
-		t.Error("expected tea.Quit command on Esc press")
+	m = updatedModel.(Model)
+	if m.state != stateInput {
+		t.Errorf("expected transition to stateInput on Esc during scan, got %v", m.state)
+	}
+	if cmd != nil {
+		t.Error("expected nil cmd (no quit) on Esc press during scanning")
+	}
+
+	// Press Ctrl+C while scanning cancels scan and quits
+	m.state = stateScanning
+	canceled = false
+	m.cancelFn = func() {
+		canceled = true
+	}
+	_, cmd = m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	if !canceled {
+		t.Error("expected cancelFn to be invoked when Ctrl+C is pressed in scanning state")
+	}
+	if cmd == nil || cmd() != tea.Quit() {
+		t.Error("expected tea.Quit command on Ctrl+C press")
 	}
 }
 
@@ -220,5 +238,120 @@ func TestStartScanEventPropagation(t *testing.T) {
 	msg := listenForEvents(m.eventChan)()
 	if msg == nil {
 		t.Error("expected non-nil message from scan event listener")
+	}
+}
+
+func TestDefaultAutoTarget(t *testing.T) {
+	m := InitialModel()
+	if m.textInput.Value() != "" {
+		t.Errorf("expected empty initial input value, got %q", m.textInput.Value())
+	}
+	updatedModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updatedModel.(Model)
+	if m.targetRange != "auto" {
+		t.Errorf("expected targetRange to default to 'auto', got %q", m.targetRange)
+	}
+
+	m2 := InitialModel()
+	m2.textInput.SetValue("   ")
+	updatedModel2, _ := m2.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m2 = updatedModel2.(Model)
+	if m2.targetRange != "auto" {
+		t.Errorf("expected whitespace-only input to default to 'auto', got %q", m2.targetRange)
+	}
+
+	m3 := InitialModel()
+	m3.textInput.SetValue("  192.168.1.0/24  ")
+	updatedModel3, _ := m3.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m3 = updatedModel3.(Model)
+	if m3.targetRange != "192.168.1.0/24" {
+		t.Errorf("expected trimmed targetRange '192.168.1.0/24', got %q", m3.targetRange)
+	}
+}
+
+func TestInputQHandling(t *testing.T) {
+	m := InitialModel()
+	updatedModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	m = updatedModel.(Model)
+	if m.state != stateInput {
+		t.Errorf("expected to stay in stateInput when typing 'q', got %v", m.state)
+	}
+	if cmd != nil && cmd() == tea.Quit() {
+		t.Error("typing 'q' in stateInput should not quit application")
+	}
+}
+
+func TestExportFeedbackRendering(t *testing.T) {
+	m := InitialModel()
+	m.state = stateResults
+	m.devices = []results.HostResult{{IP: "192.168.1.1"}}
+
+	// Success export log
+	m.logMsgs = []string{"Exported to catnet_export.json"}
+	viewStr := m.View()
+	if !strings.Contains(viewStr, "Exported to catnet_export.json") {
+		t.Errorf("expected View to render export success log, got %q", viewStr)
+	}
+
+	// Error export log
+	m.logMsgs = []string{"Export error: permission denied"}
+	viewStr = m.View()
+	if !strings.Contains(viewStr, "Export error: permission denied") {
+		t.Errorf("expected View to render export error log, got %q", viewStr)
+	}
+}
+
+func TestAutoPlaceholderAndView(t *testing.T) {
+	engine := scan.NewEngine()
+	m := NewModel(engine)
+	if !strings.Contains(m.textInput.Placeholder, "auto") {
+		t.Errorf("expected textInput placeholder to contain 'auto', got %q", m.textInput.Placeholder)
+	}
+	viewStr := m.View()
+	if !strings.Contains(viewStr, "(default: auto)") {
+		t.Errorf("expected stateInput View to contain prompt with default 'auto', got %q", viewStr)
+	}
+}
+
+func TestScanAbortWithQAndEsc(t *testing.T) {
+	for _, key := range []string{"q", "esc"} {
+		t.Run("abort with "+key, func(t *testing.T) {
+			engine := scan.NewEngine()
+			m := NewModel(engine)
+			m.targetRange = "127.0.0.1"
+			m.state = stateScanning
+			m.startScan()
+
+			if m.cancelFn == nil {
+				t.Fatal("expected non-nil cancelFn during scan")
+			}
+
+			updatedModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(key)})
+			if key == "esc" {
+				updatedModel, cmd = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+			}
+			m = updatedModel.(Model)
+
+			if m.state != stateInput {
+				t.Errorf("expected state to return to stateInput after abort, got %v", m.state)
+			}
+			if m.cancelFn != nil {
+				t.Error("expected cancelFn to be nil after abort")
+			}
+			if cmd != nil && cmd() == tea.Quit() {
+				t.Errorf("key %q during scan should abort to stateInput, not quit app", key)
+			}
+
+			// Verify late scanDoneMsg does not change state back to stateResults
+			updatedModel, _ = m.Update(scanDoneMsg{})
+			m = updatedModel.(Model)
+			if m.state != stateInput {
+				t.Errorf("expected state to remain stateInput on late scanDoneMsg, got %v", m.state)
+			}
+
+			// Drain eventChan so goroutine terminates cleanly
+			for range m.eventChan {
+			}
+		})
 	}
 }

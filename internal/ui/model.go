@@ -49,7 +49,7 @@ func InitialModel() Model {
 // NewModel creates a new Model with the provided scan Engine instance.
 func NewModel(engine *scan.Engine) Model {
 	ti := textinput.New()
-	ti.Placeholder = "192.168.1.1-254"
+	ti.Placeholder = "auto (or e.g. 192.168.1.1-254)"
 	ti.Focus()
 	ti.CharLimit = 156
 	ti.Width = 30
@@ -82,18 +82,34 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "esc":
+		case "ctrl+c":
 			if m.state == stateScanning && m.cancelFn != nil {
 				m.cancelFn()
 				m.cancelFn = nil
 			}
 			return m, tea.Quit
 
+		case "esc":
+			if m.state == stateScanning {
+				if m.cancelFn != nil {
+					m.cancelFn()
+					m.cancelFn = nil
+				}
+				m.state = stateInput
+				m.textInput.Focus()
+				return m, nil
+			}
+			return m, tea.Quit
+
 		case "q":
-			if m.state == stateScanning && m.cancelFn != nil {
-				m.cancelFn()
-				m.cancelFn = nil
-				return m, tea.Quit
+			if m.state == stateScanning {
+				if m.cancelFn != nil {
+					m.cancelFn()
+					m.cancelFn = nil
+				}
+				m.state = stateInput
+				m.textInput.Focus()
+				return m, nil
 			}
 			if m.state == stateResults {
 				m.state = stateInput
@@ -103,15 +119,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.textInput.Focus()
 				return m, nil
 			}
-			if m.state == stateInput {
-				return m, tea.Quit
-			}
 
 		case "enter":
 			if m.state == stateInput {
-				m.targetRange = m.textInput.Value()
+				m.targetRange = strings.ToLower(strings.TrimSpace(m.textInput.Value()))
 				if m.targetRange == "" {
-					m.targetRange = "192.168.1.1-254"
+					m.targetRange = "auto"
 				}
 				m.state = stateScanning
 				m.progress = 0
@@ -155,9 +168,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, listenForEvents(m.eventChan)
 
 	case scanDoneMsg:
-		m.state = stateResults
-		if msg.err != nil {
-			m.errorMsg = msg.err.Error()
+		if m.state == stateScanning {
+			m.state = stateResults
+			if msg.err != nil {
+				m.errorMsg = msg.err.Error()
+			}
 		}
 		return m, nil
 	}
@@ -179,7 +194,7 @@ func (m Model) View() string {
 
 	switch m.state {
 	case stateInput:
-		s.WriteString(greyText.Render("Enter IP range or CIDR to scan (default: 192.168.1.1-254):"))
+		s.WriteString(greyText.Render("Enter IP range, CIDR, or 'auto' to scan (default: auto):"))
 		s.WriteString("\n\n")
 		s.WriteString(m.textInput.View())
 		s.WriteString("\n\n")
@@ -243,9 +258,15 @@ func (m Model) View() string {
 			s.WriteString("\n")
 		}
 
-		if len(m.logMsgs) > 0 && m.logMsgs[len(m.logMsgs)-1] == "Exported to catnet_export.json" {
-			s.WriteString(greenText.Render("✓ Results successfully exported to catnet_export.json"))
-			s.WriteString("\n\n")
+		if len(m.logMsgs) > 0 {
+			lastLog := m.logMsgs[len(m.logMsgs)-1]
+			if strings.HasPrefix(lastLog, "Exported to") {
+				s.WriteString(greenText.Render(fmt.Sprintf("✓ %s", lastLog)))
+				s.WriteString("\n\n")
+			} else if strings.HasPrefix(lastLog, "Export error:") {
+				s.WriteString(redText.Render(fmt.Sprintf("✗ %s", lastLog)))
+				s.WriteString("\n\n")
+			}
 		}
 
 		// Footer navigation
