@@ -48,6 +48,7 @@ brews:
       owner: catnet-io
       name: homebrew-tap
       branch: main
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     homepage: "https://github.com/catnet-io/tui"
     description: "Terminal UI scanner frontend for CatNet"
     license: "MIT"
@@ -61,6 +62,7 @@ scoops:
       owner: catnet-io
       name: scoop-bucket
       branch: main
+      token: "{{ .Env.SCOOP_BUCKET_GITHUB_TOKEN }}"
     homepage: "https://github.com/catnet-io/tui"
     description: "Terminal UI scanner frontend for CatNet"
     license: "MIT"

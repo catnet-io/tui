@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Explicitly configured `token` in `.goreleaser.yaml` for Homebrew tap and Scoop bucket repositories to use release workflow token secrets.
 - Resolved data race in scan initialization goroutine (`startScan`) when accessing engine and target parameters.
 
 ## [0.1.0] - 2026-07-25
