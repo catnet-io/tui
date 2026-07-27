@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-27
+
 ### Added
 
 - Added terminal resize awareness (`tea.WindowSizeMsg`) storing dimensions and dynamically resizing UI components and viewports.
