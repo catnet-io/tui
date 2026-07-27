@@ -6,6 +6,7 @@ import (
 	"github.com/catnet-io/engine/pkg/events"
 	"github.com/catnet-io/engine/pkg/profile"
 	"github.com/catnet-io/engine/pkg/results"
+	"github.com/catnet-io/engine/pkg/targets"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -29,6 +30,9 @@ func listenForEvents(ch <-chan events.Event) tea.Cmd {
 				return scanProgressMsg(data.Ratio)
 			}
 		case events.ScanCompleted:
+			if err, ok := ev.Data.(error); ok && err != nil {
+				return scanDoneMsg{err: err}
+			}
 			return scanDoneMsg{}
 		}
 		return listenForEvents(ch)()
@@ -48,9 +52,22 @@ func (m *Model) startScan() tea.Cmd {
 		cfg := profile.DefaultProfile()
 		cfg.Concurrency = 32
 		cfg.TimeoutMs = 1000
+
+		targetList, err := targets.ParseRange(targetRange)
+		if err != nil || len(targetList) == 0 {
+			targetList = []string{targetRange}
+		}
+
+		var scanErr error
 		if eng != nil {
-			if err := eng.ScanStream(ctx, []string{targetRange}, cfg, eventChan); err != nil && ctx.Err() == nil {
-				_ = err
+			if err := eng.ScanStream(ctx, targetList, cfg, eventChan); err != nil && ctx.Err() == nil {
+				scanErr = err
+			}
+		}
+		if scanErr != nil {
+			eventChan <- events.Event{
+				Type: events.ScanCompleted,
+				Data: scanErr,
 			}
 		}
 		close(eventChan)
@@ -58,3 +75,4 @@ func (m *Model) startScan() tea.Cmd {
 
 	return listenForEvents(eventChan)
 }
+

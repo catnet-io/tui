@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added terminal resize awareness (`tea.WindowSizeMsg`) storing dimensions and dynamically resizing UI components and viewports.
+- Added ASCII/Lipgloss Network Topology Map in `internal/ui/topology.go` delegating graph construction to `catnet-io/engine/pkg/topology` (`BuildGraph`), featuring viewport scrolling, device role icons, edge classification, unit tests, and `[t]` view mode toggle key.
+- Added official webpage and documentation link (https://catnet-io.github.io/tui/) to README.md and repository homepage URL.
 - Added GitHub Pages documentation site under `docs/` matching catnet documentation layout.
 - Added support for `TAP_GITHUB_TOKEN` secret in release workflow for Homebrew and Scoop publishing.
 
@@ -22,8 +25,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed target range resolution in TUI scanner by utilizing `targets.ParseRange` from `catnet-io/engine` so `'auto'`, CIDR notation, and IP range strings expand into target IP slices before `ScanStream` execution.
+- Filtered host discovery notifications so only active hosts (`Host.Alive == true`) are displayed in scan results.
 - Explicitly configured `token` in `.goreleaser.yaml` for Homebrew tap and Scoop bucket repositories to use release workflow token secrets.
 - Resolved data race in scan initialization goroutine (`startScan`) when accessing engine and target parameters.
+- Fixed viewport scrolling state and message delegation in `internal/ui/model.go` so Bubble Tea viewport updates scroll position cleanly.
+- Fixed device selection highlight synchronization between Table and Topology Map views by matching device IP address instead of sorted node index.
+- Fixed scan engine error swallowing by capturing `ScanStream` errors and propagating them to `scanDoneMsg` and UI error banner.
 
 ## [0.1.0] - 2026-07-25
 

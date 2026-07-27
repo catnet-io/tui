@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -9,6 +10,7 @@ import (
 	"github.com/catnet-io/engine/pkg/events"
 	"github.com/catnet-io/engine/pkg/results"
 	"github.com/catnet-io/engine/pkg/scan"
+	"github.com/catnet-io/engine/pkg/targets"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -46,6 +48,7 @@ func TestModelUpdateNavigationAndEvents(t *testing.T) {
 		Hostname:  "localhost",
 		MAC:       "00:11:22:33:44:55",
 		OpenPorts: []int{80, 443},
+		Alive:     true,
 	}
 	updatedModel, _ = m.Update(hostDiscoveredMsg(host))
 	m = updatedModel.(Model)
@@ -269,6 +272,18 @@ func TestDefaultAutoTarget(t *testing.T) {
 	}
 }
 
+func TestTargetRangeResolution(t *testing.T) {
+	parsedAuto, err := targets.ParseRange("auto")
+	if err != nil || len(parsedAuto) == 0 {
+		t.Errorf("expected targets.ParseRange('auto') to resolve IPs, got err: %v, count: %d", err, len(parsedAuto))
+	}
+
+	parsedCIDR, err := targets.ParseRange("192.168.1.0/28")
+	if err != nil || len(parsedCIDR) != 14 {
+		t.Errorf("expected targets.ParseRange('192.168.1.0/28') to resolve 14 IPs, got err: %v, count: %d", err, len(parsedCIDR))
+	}
+}
+
 func TestInputQHandling(t *testing.T) {
 	m := InitialModel()
 	updatedModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
@@ -355,3 +370,50 @@ func TestScanAbortWithQAndEsc(t *testing.T) {
 		})
 	}
 }
+
+func TestScanErrorPropagation(t *testing.T) {
+	m := InitialModel()
+	m.state = stateScanning
+
+	err := errors.New("network interface down")
+
+	updatedModel, _ := m.Update(scanDoneMsg{err: err})
+	m = updatedModel.(Model)
+
+	if m.state != stateResults {
+		t.Fatalf("expected transition to stateResults, got %v", m.state)
+	}
+	if m.errorMsg != "network interface down" {
+		t.Errorf("expected errorMsg 'network interface down', got %q", m.errorMsg)
+	}
+
+	viewStr := m.View()
+	if !strings.Contains(viewStr, "Scan Error: network interface down") {
+		t.Errorf("expected View to contain error banner, got: %s", viewStr)
+	}
+}
+
+func TestViewportMessageDelegation(t *testing.T) {
+	m := InitialModel()
+	m.state = stateResults
+	m.devices = []results.HostResult{{IP: "192.168.1.1", Alive: true}}
+
+	// Initialize window size & viewport
+	updatedModel, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+	m = updatedModel.(Model)
+
+	if !m.viewportReady {
+		t.Fatal("expected viewportReady to be true after WindowSizeMsg")
+	}
+
+	// Send PgDn key to model in stateResults to test delegation to viewport
+	updatedModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyPgDown})
+	m = updatedModel.(Model)
+
+	// Ensure view renders cleanly after viewport update
+	viewStr := m.View()
+	if !strings.Contains(viewStr, "NETWORK TOPOLOGY MAP") {
+		t.Errorf("expected View to render topology map after viewport scrolling message, got: %s", viewStr)
+	}
+}
+
