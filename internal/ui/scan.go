@@ -30,6 +30,9 @@ func listenForEvents(ch <-chan events.Event) tea.Cmd {
 				return scanProgressMsg(data.Ratio)
 			}
 		case events.ScanCompleted:
+			if err, ok := ev.Data.(error); ok && err != nil {
+				return scanDoneMsg{err: err}
+			}
 			return scanDoneMsg{}
 		}
 		return listenForEvents(ch)()
@@ -55,9 +58,16 @@ func (m *Model) startScan() tea.Cmd {
 			targetList = []string{targetRange}
 		}
 
+		var scanErr error
 		if eng != nil {
 			if err := eng.ScanStream(ctx, targetList, cfg, eventChan); err != nil && ctx.Err() == nil {
-				_ = err
+				scanErr = err
+			}
+		}
+		if scanErr != nil {
+			eventChan <- events.Event{
+				Type: events.ScanCompleted,
+				Data: scanErr,
 			}
 		}
 		close(eventChan)

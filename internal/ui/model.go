@@ -90,6 +90,36 @@ func (m Model) exportResults() error {
 	return os.WriteFile("catnet_export.json", data, 0600)
 }
 
+func (m *Model) updateViewportContent() {
+	if m.width <= 0 || m.height <= 0 {
+		return
+	}
+	vpHeight := m.height - 14
+	if m.state == stateResults {
+		vpHeight = m.height - 7
+		if m.viewMode == viewBoth {
+			tableLines := len(m.devices) + 3
+			vpHeight = m.height - 7 - tableLines
+		}
+	}
+	if vpHeight < 4 {
+		vpHeight = 4
+	}
+
+	if !m.viewportReady {
+		m.viewport = viewport.New(m.width, vpHeight)
+		m.viewportReady = true
+	} else {
+		m.viewport.Width = m.width
+		m.viewport.Height = vpHeight
+	}
+
+	if m.state == stateResults {
+		mapContent := RenderNetworkMap(m.devices, m.targetRange, m.selectedIdx, m.width)
+		m.viewport.SetContent(mapContent)
+	}
+}
+
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
@@ -100,17 +130,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.Width > 20 {
 			m.progressBar.Width = msg.Width - 20
 		}
-		vpHeight := m.height - 14
-		if vpHeight < 5 {
-			vpHeight = 5
-		}
-		if !m.viewportReady {
-			m.viewport = viewport.New(m.width, vpHeight)
-			m.viewportReady = true
-		} else {
-			m.viewport.Width = m.width
-			m.viewport.Height = vpHeight
-		}
+		m.updateViewportContent()
 
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -161,6 +181,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.state = stateScanning
 				m.progress = 0
 				m.devices = nil
+				m.errorMsg = ""
 				m.logMsgs = []string{"Initializing scan..."}
 				return m, m.startScan()
 			}
@@ -170,6 +191,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.selectedIdx > 0 {
 					m.selectedIdx--
 				}
+				m.updateViewportContent()
 			}
 
 		case "down", "j":
@@ -177,6 +199,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.selectedIdx < len(m.devices)-1 {
 					m.selectedIdx++
 				}
+				m.updateViewportContent()
 			}
 
 		case "e":
@@ -192,6 +215,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "t", "m":
 			if m.state == stateResults {
 				m.viewMode = (m.viewMode + 1) % 3
+				m.updateViewportContent()
 			}
 		}
 
@@ -199,6 +223,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.Alive {
 			m.devices = append(m.devices, results.HostResult(msg))
 			m.logMsgs = append(m.logMsgs, fmt.Sprintf("Host: %s (%s)", msg.IP, msg.Hostname))
+			m.updateViewportContent()
 		}
 		return m, listenForEvents(m.eventChan)
 
@@ -211,7 +236,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.state = stateResults
 			if msg.err != nil {
 				m.errorMsg = msg.err.Error()
+				m.logMsgs = append(m.logMsgs, fmt.Sprintf("Scan error: %v", msg.err))
 			}
+			m.updateViewportContent()
 		}
 		return m, nil
 	}
@@ -219,6 +246,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.state == stateInput {
 		m.textInput, cmd = m.textInput.Update(msg)
 		return m, cmd
+	}
+
+	if m.state == stateResults && m.viewportReady {
+		var vpCmd tea.Cmd
+		m.viewport, vpCmd = m.viewport.Update(msg)
+		return m, tea.Batch(cmd, vpCmd)
 	}
 
 	return m, nil
@@ -265,6 +298,11 @@ func (m Model) View() string {
 		s.WriteString(greenText.Render(fmt.Sprintf("Scan completed for: %s", m.targetRange)))
 		s.WriteString("\n\n")
 
+		if m.errorMsg != "" {
+			s.WriteString(redText.Render(fmt.Sprintf("Scan Error: %s", m.errorMsg)))
+			s.WriteString("\n\n")
+		}
+
 		if len(m.devices) == 0 {
 			s.WriteString(redText.Render("No active hosts discovered."))
 			s.WriteString("\n\n")
@@ -299,21 +337,10 @@ func (m Model) View() string {
 			}
 
 			if m.viewMode == viewBoth || m.viewMode == viewMap {
-				mapContent := RenderNetworkMap(m.devices, m.targetRange, m.selectedIdx, m.width)
-				if m.width > 0 && m.height > 0 {
-					vpHeight := m.height - 7
-					if m.viewMode == viewBoth {
-						tableLines := len(m.devices) + 3
-						vpHeight = m.height - 7 - tableLines
-					}
-					if vpHeight < 4 {
-						vpHeight = 4
-					}
-					m.viewport.Width = m.width
-					m.viewport.Height = vpHeight
-					m.viewport.SetContent(mapContent)
+				if m.viewportReady && m.width > 0 && m.height > 0 {
 					s.WriteString(m.viewport.View())
 				} else {
+					mapContent := RenderNetworkMap(m.devices, m.targetRange, m.selectedIdx, m.width)
 					s.WriteString(mapContent)
 				}
 				s.WriteString("\n")

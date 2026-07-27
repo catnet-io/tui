@@ -107,3 +107,44 @@ func TestWindowSizeMsgHandling(t *testing.T) {
 		t.Errorf("expected View output to render topology map within viewport, got: %s", viewStr)
 	}
 }
+
+func TestSelectionConsistencyWithSortedNodes(t *testing.T) {
+	// devs[0] is regular host 192.168.1.50, devs[1] is router/gateway 192.168.1.1
+	devs := []results.HostResult{
+		{IP: "192.168.1.50", Hostname: "workstation", Alive: true},
+		{IP: "192.168.1.1", Hostname: "router.gateway", Alive: true},
+	}
+
+	// Select selectedIdx = 0 (192.168.1.50)
+	out := RenderNetworkMap(devs, "192.168.1.0/24", 0)
+
+	// Verify that workstation (192.168.1.50) is rendered as selected
+	lines := strings.Split(out, "\n")
+	var hostLine, gatewayLine string
+	for _, line := range lines {
+		if strings.Contains(line, "192.168.1.50") {
+			hostLine = line
+		}
+		if strings.Contains(line, "192.168.1.1") {
+			gatewayLine = line
+		}
+	}
+
+	if hostLine == "" || gatewayLine == "" {
+		t.Fatalf("expected both host and gateway lines in rendered output: %s", out)
+	}
+
+	// Gateway should come first in sorted nodes list
+	gatewayIdx := strings.Index(out, "192.168.1.1")
+	hostIdx := strings.Index(out, "192.168.1.50")
+	if gatewayIdx >= hostIdx {
+		t.Errorf("expected Gateway (192.168.1.1) to be sorted before Host (192.168.1.50)")
+	}
+
+	// Highlight should be on 192.168.1.50 (devs[0])
+	selectedStyleSnippet := selectedRowStyle.Render("192.168.1.50")
+	if !strings.Contains(out, selectedStyleSnippet) {
+		t.Errorf("expected selected host 192.168.1.50 to be rendered with selectedRowStyle")
+	}
+}
+

@@ -71,6 +71,11 @@ func RenderNetworkMap(devices []results.HostResult, targetRange string, selected
 		return nodes[i].ID < nodes[j].ID
 	})
 
+	var selectedIP string
+	if selectedIdx >= 0 && selectedIdx < len(devices) {
+		selectedIP = devices[selectedIdx].IP
+	}
+
 	for i, node := range nodes {
 		branch := " ├── "
 		if i == len(nodes)-1 {
@@ -96,7 +101,7 @@ func RenderNetworkMap(devices []results.HostResult, targetRange string, selected
 		hostInfo := fmt.Sprintf("%s %-15s [%s] %s",
 			icon, node.ID, truncate(labelStr, 20), linkInfo)
 
-		if i == selectedIdx {
+		if node.ID == selectedIP {
 			b.WriteString(greyText.Render(branch) + selectedRowStyle.Render(hostInfo) + "\n")
 		} else {
 			b.WriteString(greyText.Render(branch) + normalRowStyle.Render(hostInfo) + "\n")

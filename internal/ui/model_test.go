@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -369,3 +370,50 @@ func TestScanAbortWithQAndEsc(t *testing.T) {
 		})
 	}
 }
+
+func TestScanErrorPropagation(t *testing.T) {
+	m := InitialModel()
+	m.state = stateScanning
+
+	err := errors.New("network interface down")
+
+	updatedModel, _ := m.Update(scanDoneMsg{err: err})
+	m = updatedModel.(Model)
+
+	if m.state != stateResults {
+		t.Fatalf("expected transition to stateResults, got %v", m.state)
+	}
+	if m.errorMsg != "network interface down" {
+		t.Errorf("expected errorMsg 'network interface down', got %q", m.errorMsg)
+	}
+
+	viewStr := m.View()
+	if !strings.Contains(viewStr, "Scan Error: network interface down") {
+		t.Errorf("expected View to contain error banner, got: %s", viewStr)
+	}
+}
+
+func TestViewportMessageDelegation(t *testing.T) {
+	m := InitialModel()
+	m.state = stateResults
+	m.devices = []results.HostResult{{IP: "192.168.1.1", Alive: true}}
+
+	// Initialize window size & viewport
+	updatedModel, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+	m = updatedModel.(Model)
+
+	if !m.viewportReady {
+		t.Fatal("expected viewportReady to be true after WindowSizeMsg")
+	}
+
+	// Send PgDn key to model in stateResults to test delegation to viewport
+	updatedModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyPgDown})
+	m = updatedModel.(Model)
+
+	// Ensure view renders cleanly after viewport update
+	viewStr := m.View()
+	if !strings.Contains(viewStr, "NETWORK TOPOLOGY MAP") {
+		t.Errorf("expected View to render topology map after viewport scrolling message, got: %s", viewStr)
+	}
+}
+
