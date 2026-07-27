@@ -1,5 +1,12 @@
 # catnet-tui
 
+[![Webpage](https://img.shields.io/badge/website-catnet--io.github.io%2Ftui-blue)](https://catnet-io.github.io/tui/)
+[![Release](https://img.shields.io/github/v/release/catnet-io/tui)](https://github.com/catnet-io/tui/releases)
+[![CI](https://github.com/catnet-io/tui/actions/workflows/ci.yml/badge.svg)](https://github.com/catnet-io/tui/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+**Official Webpage & Documentation:** [https://catnet-io.github.io/tui/](https://catnet-io.github.io/tui/)
+
 catnet-tui is the terminal user interface for the CatNet ecosystem.
 
 It focuses on keyboard-first workflows, live execution visibility, result navigation, filtering, and export operations, powered by catnet-core.
@@ -15,6 +22,7 @@ It focuses on keyboard-first workflows, live execution visibility, result naviga
 - Target input
 - Running jobs
 - Hosts table
+- Network topology map (ASCII/Lipgloss tree via engine/pkg/topology)
 - Host details
 - Export dialog
 - History

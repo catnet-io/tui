@@ -6,6 +6,7 @@ import (
 	"github.com/catnet-io/engine/pkg/events"
 	"github.com/catnet-io/engine/pkg/profile"
 	"github.com/catnet-io/engine/pkg/results"
+	"github.com/catnet-io/engine/pkg/targets"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -48,8 +49,14 @@ func (m *Model) startScan() tea.Cmd {
 		cfg := profile.DefaultProfile()
 		cfg.Concurrency = 32
 		cfg.TimeoutMs = 1000
+
+		targetList, err := targets.ParseRange(targetRange)
+		if err != nil || len(targetList) == 0 {
+			targetList = []string{targetRange}
+		}
+
 		if eng != nil {
-			if err := eng.ScanStream(ctx, []string{targetRange}, cfg, eventChan); err != nil && ctx.Err() == nil {
+			if err := eng.ScanStream(ctx, targetList, cfg, eventChan); err != nil && ctx.Err() == nil {
 				_ = err
 			}
 		}
@@ -58,3 +65,4 @@ func (m *Model) startScan() tea.Cmd {
 
 	return listenForEvents(eventChan)
 }
+

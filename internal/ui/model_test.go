@@ -9,6 +9,7 @@ import (
 	"github.com/catnet-io/engine/pkg/events"
 	"github.com/catnet-io/engine/pkg/results"
 	"github.com/catnet-io/engine/pkg/scan"
+	"github.com/catnet-io/engine/pkg/targets"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -46,6 +47,7 @@ func TestModelUpdateNavigationAndEvents(t *testing.T) {
 		Hostname:  "localhost",
 		MAC:       "00:11:22:33:44:55",
 		OpenPorts: []int{80, 443},
+		Alive:     true,
 	}
 	updatedModel, _ = m.Update(hostDiscoveredMsg(host))
 	m = updatedModel.(Model)
@@ -266,6 +268,18 @@ func TestDefaultAutoTarget(t *testing.T) {
 	m3 = updatedModel3.(Model)
 	if m3.targetRange != "192.168.1.0/24" {
 		t.Errorf("expected trimmed targetRange '192.168.1.0/24', got %q", m3.targetRange)
+	}
+}
+
+func TestTargetRangeResolution(t *testing.T) {
+	parsedAuto, err := targets.ParseRange("auto")
+	if err != nil || len(parsedAuto) == 0 {
+		t.Errorf("expected targets.ParseRange('auto') to resolve IPs, got err: %v, count: %d", err, len(parsedAuto))
+	}
+
+	parsedCIDR, err := targets.ParseRange("192.168.1.0/28")
+	if err != nil || len(parsedCIDR) != 14 {
+		t.Errorf("expected targets.ParseRange('192.168.1.0/28') to resolve 14 IPs, got err: %v, count: %d", err, len(parsedCIDR))
 	}
 }
 

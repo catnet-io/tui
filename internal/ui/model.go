@@ -13,6 +13,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -24,17 +25,30 @@ const (
 	stateResults
 )
 
+type viewMode int
+
+const (
+	viewBoth viewMode = iota
+	viewTable
+	viewMap
+)
+
 // Model represents the Bubble Tea model for the CatNet TUI.
 type Model struct {
-	state       sessionState
-	textInput   textinput.Model
-	progressBar progress.Model
-	progress    float64
-	devices     []results.HostResult
-	selectedIdx int
-	errorMsg    string
-	targetRange string
-	logMsgs     []string
+	state         sessionState
+	viewMode      viewMode
+	textInput     textinput.Model
+	progressBar   progress.Model
+	viewport      viewport.Model
+	viewportReady bool
+	width         int
+	height        int
+	progress      float64
+	devices       []results.HostResult
+	selectedIdx   int
+	errorMsg      string
+	targetRange   string
+	logMsgs       []string
 
 	engine    *scan.Engine
 	cancelFn  context.CancelFunc
@@ -80,6 +94,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
+		if msg.Width > 20 {
+			m.progressBar.Width = msg.Width - 20
+		}
+		vpHeight := m.height - 14
+		if vpHeight < 5 {
+			vpHeight = 5
+		}
+		if !m.viewportReady {
+			m.viewport = viewport.New(m.width, vpHeight)
+			m.viewportReady = true
+		} else {
+			m.viewport.Width = m.width
+			m.viewport.Height = vpHeight
+		}
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
@@ -156,11 +188,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.logMsgs = append(m.logMsgs, "Exported to catnet_export.json")
 				}
 			}
+
+		case "t", "m":
+			if m.state == stateResults {
+				m.viewMode = (m.viewMode + 1) % 3
+			}
 		}
 
 	case hostDiscoveredMsg:
-		m.devices = append(m.devices, results.HostResult(msg))
-		m.logMsgs = append(m.logMsgs, fmt.Sprintf("Host: %s (%s)", msg.IP, msg.Hostname))
+		if msg.Alive {
+			m.devices = append(m.devices, results.HostResult(msg))
+			m.logMsgs = append(m.logMsgs, fmt.Sprintf("Host: %s (%s)", msg.IP, msg.Hostname))
+		}
 		return m, listenForEvents(m.eventChan)
 
 	case scanProgressMsg:
@@ -230,32 +269,55 @@ func (m Model) View() string {
 			s.WriteString(redText.Render("No active hosts discovered."))
 			s.WriteString("\n\n")
 		} else {
-			// Render Table header
-			s.WriteString(headerStyle.Render(fmt.Sprintf("  %-16s %-25s %-20s %-15s", "IP Address", "Hostname", "MAC", "Ports")))
-			s.WriteString("\n")
+			if m.viewMode == viewBoth || m.viewMode == viewTable {
+				// Render Table header
+				s.WriteString(headerStyle.Render(fmt.Sprintf("  %-16s %-25s %-20s %-15s", "IP Address", "Hostname", "MAC", "Ports")))
+				s.WriteString("\n")
 
-			// Render Table rows
-			for i, dev := range m.devices {
-				portsStr := ""
-				if len(dev.OpenPorts) > 0 {
-					var ports []string
-					for _, p := range dev.OpenPorts {
-						ports = append(ports, fmt.Sprintf("%d", p))
+				// Render Table rows
+				for i, dev := range m.devices {
+					portsStr := ""
+					if len(dev.OpenPorts) > 0 {
+						var ports []string
+						for _, p := range dev.OpenPorts {
+							ports = append(ports, fmt.Sprintf("%d", p))
+						}
+						portsStr = strings.Join(ports, ",")
+					} else {
+						portsStr = "None"
 					}
-					portsStr = strings.Join(ports, ",")
-				} else {
-					portsStr = "None"
-				}
 
-				rowContent := fmt.Sprintf("  %-16s %-25s %-20s %-15s", dev.IP, truncate(dev.Hostname, 23), dev.MAC, truncate(portsStr, 14))
-				if i == m.selectedIdx {
-					s.WriteString(selectedRowStyle.Render(rowContent))
-				} else {
-					s.WriteString(normalRowStyle.Render(rowContent))
+					rowContent := fmt.Sprintf("  %-16s %-25s %-20s %-15s", dev.IP, truncate(dev.Hostname, 23), dev.MAC, truncate(portsStr, 14))
+					if i == m.selectedIdx {
+						s.WriteString(selectedRowStyle.Render(rowContent))
+					} else {
+						s.WriteString(normalRowStyle.Render(rowContent))
+					}
+					s.WriteString("\n")
 				}
 				s.WriteString("\n")
 			}
-			s.WriteString("\n")
+
+			if m.viewMode == viewBoth || m.viewMode == viewMap {
+				mapContent := RenderNetworkMap(m.devices, m.targetRange, m.selectedIdx, m.width)
+				if m.width > 0 && m.height > 0 {
+					vpHeight := m.height - 7
+					if m.viewMode == viewBoth {
+						tableLines := len(m.devices) + 3
+						vpHeight = m.height - 7 - tableLines
+					}
+					if vpHeight < 4 {
+						vpHeight = 4
+					}
+					m.viewport.Width = m.width
+					m.viewport.Height = vpHeight
+					m.viewport.SetContent(mapContent)
+					s.WriteString(m.viewport.View())
+				} else {
+					s.WriteString(mapContent)
+				}
+				s.WriteString("\n")
+			}
 		}
 
 		if len(m.logMsgs) > 0 {
@@ -270,7 +332,11 @@ func (m Model) View() string {
 		}
 
 		// Footer navigation
-		s.WriteString(greyText.Render("Navigation: [↑/↓] select host • [e] export results • [q] new scan • [ESC] exit"))
+		footerText := "Navigation: [↑/↓] select host • [t] toggle map • [e] export results • [q] new scan • [ESC] exit"
+		if m.width > 0 && m.width < 90 {
+			footerText = "Nav: [↑/↓] select • [t] map • [e] export • [q] new • [ESC] exit"
+		}
+		s.WriteString(greyText.Render(footerText))
 	}
 
 	return s.String()
