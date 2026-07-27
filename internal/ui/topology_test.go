@@ -147,4 +147,3 @@ func TestSelectionConsistencyWithSortedNodes(t *testing.T) {
 		t.Errorf("expected selected host 192.168.1.50 to be rendered with selectedRowStyle")
 	}
 }
-

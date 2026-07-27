@@ -75,4 +75,3 @@ func (m *Model) startScan() tea.Cmd {
 
 	return listenForEvents(eventChan)
 }
-

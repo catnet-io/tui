@@ -416,4 +416,3 @@ func TestViewportMessageDelegation(t *testing.T) {
 		t.Errorf("expected View to render topology map after viewport scrolling message, got: %s", viewStr)
 	}
 }
-
