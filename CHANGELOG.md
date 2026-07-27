@@ -29,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Filtered host discovery notifications so only active hosts (`Host.Alive == true`) are displayed in scan results.
 - Explicitly configured `token` in `.goreleaser.yaml` for Homebrew tap and Scoop bucket repositories to use release workflow token secrets.
 - Resolved data race in scan initialization goroutine (`startScan`) when accessing engine and target parameters.
+- Fixed viewport scrolling state and message delegation in `internal/ui/model.go` so Bubble Tea viewport updates scroll position cleanly.
+- Fixed device selection highlight synchronization between Table and Topology Map views by matching device IP address instead of sorted node index.
+- Fixed scan engine error swallowing by capturing `ScanStream` errors and propagating them to `scanDoneMsg` and UI error banner.
 
 ## [0.1.0] - 2026-07-25
 
