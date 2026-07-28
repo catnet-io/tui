@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added VHS-recorded demonstration GIF (`demo/demo.gif`) and script (`demo/demo.tape`) showcasing target entry, scan execution, results table, and network topology map view.
+
 ## [0.2.0] - 2026-07-27
 
 ### Added
