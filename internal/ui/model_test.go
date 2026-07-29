@@ -416,3 +416,119 @@ func TestViewportMessageDelegation(t *testing.T) {
 		t.Errorf("expected View to render topology map after viewport scrolling message, got: %s", viewStr)
 	}
 }
+
+func TestResultColumnsOSVendorDeviceType(t *testing.T) {
+	m := InitialModel()
+	m.state = stateResults
+	m.devices = []results.HostResult{
+		{
+			IP:        "192.168.1.50",
+			Hostname:  "printer.local",
+			MAC:       "AA:BB:CC:DD:EE:FF",
+			Alive:     true,
+			OpenPorts: []int{9100},
+		},
+	}
+
+	// Wide terminal: OS, Vendor, DeviceType headers should be displayed
+	updatedModel, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 30})
+	m = updatedModel.(Model)
+	viewStr := m.View()
+	if !strings.Contains(viewStr, "OS") || !strings.Contains(viewStr, "Vendor") || !strings.Contains(viewStr, "DeviceType") {
+		t.Errorf("expected wide view to render OS, Vendor, DeviceType headers, got:\n%s", viewStr)
+	}
+
+	// Narrow terminal: OS, Vendor, DeviceType headers should be hidden
+	updatedModel, _ = m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m = updatedModel.(Model)
+	viewStr = m.View()
+	if strings.Contains(viewStr, "DeviceType") {
+		t.Errorf("expected narrow view to hide DeviceType column, got:\n%s", viewStr)
+	}
+}
+
+func TestTextFilter(t *testing.T) {
+	m := InitialModel()
+	m.state = stateResults
+	m.devices = []results.HostResult{
+		{IP: "192.168.1.1", Hostname: "router.home", MAC: "00:11:22:33:44:55", Alive: true},
+		{IP: "192.168.1.20", Hostname: "desktop-pc", MAC: "AA:BB:CC:11:22:33", Alive: true},
+		{IP: "10.0.0.5", Hostname: "server-node", MAC: "99:88:77:66:55:44", Alive: true},
+	}
+
+	// Activate filter with '/'
+	updatedModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
+	m = updatedModel.(Model)
+	if !m.isFiltering {
+		t.Fatal("expected isFiltering to be true after '/' keypress")
+	}
+
+	// Type 'router' to filter
+	for _, r := range "router" {
+		updatedModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+		m = updatedModel.(Model)
+	}
+
+	filtered := m.filteredDevices()
+	if len(filtered) != 1 || filtered[0].IP != "192.168.1.1" {
+		t.Errorf("expected 1 host matching 'router', got %v", filtered)
+	}
+
+	// Case-insensitive check: clear and filter by 'DESKTOP'
+	m.filterInput.SetValue("DESKTOP")
+	filtered = m.filteredDevices()
+	if len(filtered) != 1 || filtered[0].IP != "192.168.1.20" {
+		t.Errorf("expected 1 host matching 'DESKTOP', got %v", filtered)
+	}
+
+	// Filter by MAC substring
+	m.filterInput.SetValue("99:88")
+	filtered = m.filteredDevices()
+	if len(filtered) != 1 || filtered[0].IP != "10.0.0.5" {
+		t.Errorf("expected 1 host matching MAC '99:88', got %v", filtered)
+	}
+
+	// Filter with no matches
+	m.filterInput.SetValue("nonexistent")
+	filtered = m.filteredDevices()
+	if len(filtered) != 0 {
+		t.Errorf("expected 0 hosts matching 'nonexistent', got %d", len(filtered))
+	}
+	viewStr := m.View()
+	if !strings.Contains(viewStr, "No active hosts matching filter 'nonexistent'.") {
+		t.Errorf("expected empty filter message in View, got:\n%s", viewStr)
+	}
+
+	// Esc clears filter
+	updatedModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m = updatedModel.(Model)
+	if m.isFiltering {
+		t.Error("expected isFiltering to be false after Esc press")
+	}
+	if len(m.filteredDevices()) != 3 {
+		t.Errorf("expected full list (3 hosts) after clearing filter, got %d", len(m.filteredDevices()))
+	}
+}
+
+func TestHelpOverlayToggle(t *testing.T) {
+	m := InitialModel()
+	m.state = stateResults
+
+	// Press '?' to open help modal
+	updatedModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+	m = updatedModel.(Model)
+	if !m.showHelp {
+		t.Fatal("expected showHelp to be true after '?' keypress")
+	}
+	viewStr := m.View()
+	if !strings.Contains(viewStr, "KEYBOARD SHORTCUTS HELP") {
+		t.Errorf("expected View to contain help overlay header, got:\n%s", viewStr)
+	}
+
+	// Press 'esc' to close help modal
+	updatedModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m = updatedModel.(Model)
+	if m.showHelp {
+		t.Fatal("expected showHelp to be false after 'esc' keypress")
+	}
+}
