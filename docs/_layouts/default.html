@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ page.title | default: site.title }}</title>
+  <meta name="description" content="{{ page.description | default: site.description }}">
+  
+  <!-- Favicon / Meta -->
+  <meta name="theme-color" content="#0b0c10">
+
+  <!-- Local CSS -->
+  <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+</head>
+<body>
+
+  <!-- Site Navigation Header -->
+  <header class="site-header">
+    <div class="container header-container">
+      <a href="{{ '/' | relative_url }}" class="brand-logo">
+        <span class="brand-prompt">&gt;_</span> catnet-tui
+      </a>
+      <nav class="site-nav">
+        <a href="https://github.com/catnet-io/tui" target="_blank" rel="noopener" class="nav-link">
+          <svg class="icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+          GitHub
+        </a>
+        <a href="https://github.com/catnet-io/tui/wiki" target="_blank" rel="noopener" class="nav-link">Wiki</a>
+        <a href="https://github.com/catnet-io/engine" target="_blank" rel="noopener" class="nav-link">Engine</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="container">
+      {{ content }}
+    </div>
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="container footer-container">
+      <div class="footer-brand">
+        <strong>catnet-tui</strong> — Interactive Terminal UI Scanner
+        <div class="footer-subtext">Powered by <a href="https://github.com/catnet-io/engine" target="_blank" rel="noopener">catnet-io/engine</a>. Part of the <a href="https://github.com/catnet-io" target="_blank" rel="noopener">CatNet Ecosystem</a>.</div>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/catnet-io/tui/releases" target="_blank" rel="noopener">Releases</a>
+        <a href="https://github.com/catnet-io/tui/issues" target="_blank" rel="noopener">Issues</a>
+        <a href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener">MIT License</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Local JS -->
+  <script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>
