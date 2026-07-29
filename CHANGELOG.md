@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added VHS-recorded demonstration GIF (`demo/demo.gif`) and script (`demo/demo.tape`) showcasing target entry, scan execution, results table, and network topology map view.
 - Added Rule 11 to `AGENTS.md` prohibiting downgrades of dependencies and GitHub Actions across repositories.
 
+### Security
+
+- Hardened `pr-rules-enforcer.yml` workflow by assigning GitHub Actions event context values to environment variables before shell evaluation to prevent template injection vulnerabilities (#28).
+
 ## [0.2.0] - 2026-07-27
 
 ### Added
