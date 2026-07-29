@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added OS, Vendor, and DeviceType columns to the scan results table in `internal/ui/model.go` with responsive column hiding on narrow screens (#24).
+- Added real-time text filter (`/` shortcut) in `internal/ui/model.go` filtering results table and network topology map by IP, hostname, or MAC address, with `esc` clear filter shortcut (#25).
+- Added keyboard shortcuts help overlay modal (`?` shortcut) built with `charmbracelet/bubbles/help` and `charmbracelet/bubbles/key` (#26).
 - Added VHS-recorded demonstration GIF (`demo/demo.gif`) and script (`demo/demo.tape`) showcasing target entry, scan execution, results table, and network topology map view.
 
 ## [0.2.0] - 2026-07-27
