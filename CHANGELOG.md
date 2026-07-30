@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 - Hardened `pr-rules-enforcer.yml` workflow by assigning GitHub Actions event context values to environment variables before shell evaluation to prevent template injection vulnerabilities (#28).
+- Replaced unsafe `innerHTML` assignments with `textContent` in `docs/assets/js/main.js` to resolve Codacy XSS analysis warnings.
 
 ## [0.2.0] - 2026-07-27
 

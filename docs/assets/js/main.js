@@ -52,13 +52,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
       try {
         await navigator.clipboard.writeText(textToCopy);
-        const originalText = button.innerHTML;
+        const originalText = button.textContent;
         button.classList.add('copied');
-        button.innerHTML = '✓ Copied!';
+        button.textContent = '✓ Copied!';
 
         setTimeout(() => {
           button.classList.remove('copied');
-          button.innerHTML = originalText;
+          button.textContent = originalText;
         }, 2000);
       } catch (err) {
         console.error('Failed to copy text: ', err);
