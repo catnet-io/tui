@@ -40,8 +40,10 @@ jobs:
               echo "::error::PRs from 'develop' to 'main' must be created by 'github-actions[bot]' or maintainer. Manual PRs from unauthorized users are not allowed. Found: '$PR_USER'."
               exit 1
             fi
+            echo "✓ Source branch and author validation passed."
+          else
+            echo "Skipping PR source and author validation (event: '$EVENT_NAME', target: '$BASE_REF')."
           fi
-          echo "✓ Source branch and author validation passed."
 
       - name: Validate Commit Signatures
         env:
