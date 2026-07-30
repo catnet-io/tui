@@ -4,7 +4,6 @@ description: >-
   Powered by catnet-io/engine — keyboard-centric TUI built with Bubble Tea.
 baseurl: "/tui"
 url: "https://catnet-io.github.io"
-theme: jekyll-theme-cayman
 show_downloads: false
 github:
   repository_url: https://github.com/catnet-io/tui

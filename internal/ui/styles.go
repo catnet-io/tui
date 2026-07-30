@@ -28,6 +28,16 @@ var (
 	greyText  = lipgloss.NewStyle().Foreground(lipgloss.Color("#45a29e"))
 	redText   = lipgloss.NewStyle().Foreground(lipgloss.Color("#ff0055"))
 	greenText = lipgloss.NewStyle().Foreground(lipgloss.Color("#00ff88"))
+
+	helpModalStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#66fcf1")).
+			Padding(1, 2).
+			Foreground(lipgloss.Color("#c5c6c7"))
+
+	filterBoxStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#66fcf1")).
+			Bold(true)
 )
 
 func truncate(s string, l int) string {

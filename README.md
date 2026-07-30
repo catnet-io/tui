@@ -11,6 +11,10 @@ catnet-tui is the terminal user interface for the CatNet ecosystem.
 
 It focuses on keyboard-first workflows, live execution visibility, result navigation, filtering, and export operations, powered by catnet-core.
 
+## Example
+
+![catnet-tui demo](demo/demo.gif)
+
 ## Goals
 - Deliver a rich terminal workflow for operators.
 - Make scan runs observable and easy to navigate.
