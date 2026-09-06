@@ -3,7 +3,7 @@ module github.com/catnet-io/tui
 go 1.26.4
 
 require (
-	github.com/catnet-io/engine v0.6.0
+	github.com/catnet-io/engine v0.7.0
 	github.com/charmbracelet/bubbles v1.0.0
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
